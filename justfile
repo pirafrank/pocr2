@@ -19,8 +19,12 @@ process:
   .\.venv\Scripts\python.exe src\\process.py
 
 # Run query.py from repo root
-query:
-  .\.venv\Scripts\python.exe src\\query.py
+cli:
+  .\.venv\Scripts\python.exe src\\cli.py
+
+# Run queries in GUI mode
+run:
+  .\.venv\Scripts\python.exe src\\gui.py
 
 # Clean up virtual environment
 clean:

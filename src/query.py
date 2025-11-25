@@ -12,6 +12,21 @@ from db.database import OCRDatabase
 DB_FILE = "ocr_screenshots.db"
 
 
+def exact_search(db: OCRDatabase, search_term: str):
+    """
+    Perform an exact search for `search_term` in the 'ocr_text' field.
+
+    Args:
+        db: OCRDatabase instance
+        search_term: Text to search for
+    Returns:
+        List of (filename, ocr_text) tuples matching the search term exactly
+    """
+    results = db.search_exact(search_term)
+    results.sort(key=lambda x: x[0])
+    return results
+
+
 def fuzzy_search(db: OCRDatabase, search_term: str, threshold: float = 0.6):
     """
     Perform a fuzzy search for `search_term` in the 'ocr_text' field.
@@ -71,44 +86,3 @@ def print_result(filename: str, text: str):
     # Show snippet of matching text
     text_snippet = text[:200] + "..." if len(text) > 200 else text
     print(f"Text: {text_snippet}")
-
-
-def main():
-    """Main query function."""
-    print("OCR Query Tool")
-    print("=" * 60)
-
-    term_to_search = input("Enter text to search: ")
-    search_mode = input("Search mode (1=exact, 2=fuzzy): ").strip()
-
-    # Initialize database handler
-    db = OCRDatabase(DB_FILE)
-
-    try:
-        if search_mode == "2":
-            threshold_input = input(
-                "Enter fuzzy threshold (0.0-1.0, default 0.5): "
-            ).strip()
-            threshold = float(threshold_input) if threshold_input else 0.5
-            matches = fuzzy_search(db, term_to_search, threshold=threshold)
-            print(f"\nPerforming fuzzy search (threshold: {threshold})...")
-        else:
-            matches = db.search_exact(term_to_search)
-            print("\nPerforming exact search...")
-
-        if matches:
-            print(f"\nFound {len(matches)} matches:")
-            print("=" * 60)
-            for filename, _text in matches:
-                # print_result(filename, _text)
-                print(f"  {filename}")
-        else:
-            print("\nNo matches found.")
-
-    finally:
-        # Cleanup
-        db.close()
-
-
-if __name__ == "__main__":
-    main()
