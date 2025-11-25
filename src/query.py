@@ -2,42 +2,55 @@
 OCR Query Tool
 Search OCR database using fuzzy text matching.
 """
-import sqlite3
+
 import Levenshtein
 
+from db.database import OCRDatabase
 
-def fuzzy_search(db_path, search_term, threshold=0.6):
+
+# Configuration
+DB_FILE = "ocr_screenshots.db"
+
+
+def fuzzy_search(db: OCRDatabase, search_term: str, threshold: float = 0.6):
     """
     Perform a fuzzy search for `search_term` in the 'ocr_text' field.
+
     Args:
-        db_path (str): Path to SQLite DB file.
-        search_term (str): Text to search for.
-        threshold (float): Approximate match threshold (0-1), closer to 1 is stricter.
+        db: OCRDatabase instance
+        search_term: Text to search for
+        threshold: Approximate match threshold (0-1), closer to 1 is stricter
 
     Returns:
-        List of filenames matching the search term approximately.
+        List of (filename, ocr_text) tuples matching the search term approximately
     """
-    conn = sqlite3.connect(db_path)
-    conn.create_function("SIMILARITY", 2, similarity_score)
-    cursor = conn.cursor()
+    # Get all records and perform fuzzy matching in Python
+    all_records = db.get_all_records()
 
-    query = """
-    SELECT filename, ocr_text FROM ocr_data
-    WHERE SIMILARITY(ocr_text, ?) > ?
-    ORDER BY SIMILARITY(ocr_text, ?) DESC
-    """
+    results = []
+    for _, filename, ocr_text in all_records:
+        score = similarity_score(ocr_text, search_term)
+        if score > threshold:
+            results.append((score, filename, ocr_text))
 
-    cursor.execute(query, (search_term, threshold, search_term))
-    results = cursor.fetchall()
+    # Sort by similarity score (descending)
+    results.sort(reverse=True, key=lambda x: x[0])
 
-    conn.close()
-    return results
+    # Return without score
+    return [(filename, text) for _, filename, text in results]
 
 
-def similarity_score(text1, text2):
+def similarity_score(text1: str, text2: str) -> float:
     """
     Calculate approximate similarity score between two strings (0-1).
     This uses a simple ratio based on Levenshtein distance.
+
+    Args:
+        text1: First text string
+        text2: Second text string
+
+    Returns:
+        Similarity ratio between 0 and 1
     """
     if not text1 or not text2:
         return 0.0
@@ -45,23 +58,56 @@ def similarity_score(text1, text2):
     return ratio
 
 
+def print_result(filename: str, text: str):
+    """
+    Print search results in a readable format.
+
+    Args:
+        filename: Name of the file
+        text: OCR text content
+    """
+    print(f"\n{'='*60}")
+    print(f"{filename}\n")
+    # Show snippet of matching text
+    text_snippet = text[:200] + "..." if len(text) > 200 else text
+    print(f"Text: {text_snippet}")
+
+
 def main():
     """Main query function."""
-    db_file = 'ocr_screenshots.db'
-    term_to_search = input("Enter text to search: ")
-    matches = fuzzy_search(db_file, term_to_search, threshold=0.5)
+    print("OCR Query Tool")
+    print("=" * 60)
 
-    if matches:
-        print(f"\nFound {len(matches)} matches:")
-        for filename, text in matches:
-            print(f"\n{'='*60}")
-            print(f"File: {filename}")
-            print(f"{'='*60}")
-            # Show snippet of matching text
-            text_snippet = text[:200] + "..." if len(text) > 200 else text
-            print(f"Text: {text_snippet}")
-    else:
-        print("\nNo matches found.")
+    term_to_search = input("Enter text to search: ")
+    search_mode = input("Search mode (1=exact, 2=fuzzy): ").strip()
+
+    # Initialize database handler
+    db = OCRDatabase(DB_FILE)
+
+    try:
+        if search_mode == "2":
+            threshold_input = input(
+                "Enter fuzzy threshold (0.0-1.0, default 0.5): "
+            ).strip()
+            threshold = float(threshold_input) if threshold_input else 0.5
+            matches = fuzzy_search(db, term_to_search, threshold=threshold)
+            print(f"\nPerforming fuzzy search (threshold: {threshold})...")
+        else:
+            matches = db.search_exact(term_to_search)
+            print("\nPerforming exact search...")
+
+        if matches:
+            print(f"\nFound {len(matches)} matches:")
+            print("=" * 60)
+            for filename, _text in matches:
+                # print_result(filename, _text)
+                print(f"  {filename}")
+        else:
+            print("\nNo matches found.")
+
+    finally:
+        # Cleanup
+        db.close()
 
 
 if __name__ == "__main__":
