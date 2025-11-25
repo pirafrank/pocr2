@@ -11,13 +11,7 @@ import platform
 
 from db.database import OCRDatabase
 from query import exact_search, fuzzy_search
-
-
-# Configuration
-DB_FILE = "ocr_screenshots.db"
-SCREENSHOTS_DIR = (
-    r"C:\\Users\\francesco\\OneDrive - Leonardo S.p.a. - Div Cyber Security\\Screenshots"
-)
+from utils.config import DB_FILE, get_screenshots_dir, get_fuzzy_threshold, ensure_dirs
 
 
 class OCRQueryGUI:
@@ -29,11 +23,20 @@ class OCRQueryGUI:
         self.root.title("OCR Query Tool")
         self.root.geometry("800x600")
 
+        # Ensure all required directories exist
+        ensure_dirs()
+
+        # Configuration
+        self.screenshots_dir = get_screenshots_dir()
+
         # Database instance
         self.db = OCRDatabase(DB_FILE)
 
         # Search mode (1=exact, 2=fuzzy)
         self.search_mode = tk.IntVar(value=1)
+
+        # Fuzzy search threshold
+        self.fuzzy_threshold = get_fuzzy_threshold()
 
         # Setup UI
         self._create_widgets()
@@ -76,7 +79,7 @@ class OCRQueryGUI:
         ).grid(row=0, column=0, sticky=tk.W, padx=(0, 20))
         ttk.Radiobutton(
             mode_frame,
-            text="Fuzzy Match (threshold: 0.5)",
+            text=f"Fuzzy Match (threshold: {self.fuzzy_threshold})",
             variable=self.search_mode,
             value=2,
         ).grid(row=0, column=1, sticky=tk.W)
@@ -136,7 +139,7 @@ class OCRQueryGUI:
         try:
             # Perform search
             if self.search_mode.get() == 2:
-                matches = fuzzy_search(self.db, search_term, threshold=0.5)
+                matches = fuzzy_search(self.db, search_term, threshold=self.fuzzy_threshold)
             else:
                 matches = exact_search(self.db, search_term)
 
@@ -146,7 +149,7 @@ class OCRQueryGUI:
 
                 for filename, _ in matches:
                     # Create clickable filename
-                    full_path = os.path.join(SCREENSHOTS_DIR, filename)
+                    full_path = os.path.join(self.screenshots_dir, filename)
 
                     # Insert filename as clickable link
                     start_idx = self.results_text.index(tk.END)

@@ -5,17 +5,19 @@ Processes images from a folder using multithreaded OCR and stores results in SQL
 
 from db.database import OCRDatabase
 from utils.ocr_processor import OCRProcessor
+from utils.config import (
+    DB_FILE,
+    get_screenshots_dir,
+    get_tesseract_path,
+    get_max_workers,
+    ensure_dirs,
+)
 
 
 # Configuration
-DB_FILE = "ocr_screenshots.db"
-TESSERACT_PATH = (
-    r"C:\Users\francesco\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe"
-)
-SCREENSHOTS_DIR = (
-    r"C:\\Users\francesco\\OneDrive - Leonardo S.p.a. - Div Cyber Security\\Screenshots"
-)
-MAX_WORKERS = 4  # Number of threads for parallel processing
+TESSERACT_PATH = get_tesseract_path()
+MAX_WORKERS = get_max_workers()
+SCREENSHOTS_DIR = get_screenshots_dir()
 
 
 def progress_callback(filename: str, success: bool, message: str):
@@ -30,6 +32,9 @@ def progress_callback(filename: str, success: bool, message: str):
 
 def main():
     """Main processing function."""
+    # Ensure all required directories exist
+    ensure_dirs()
+
     print(f"Starting OCR processing from: {SCREENSHOTS_DIR}")
     print(f"Using {MAX_WORKERS} threads\n")
 

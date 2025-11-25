@@ -8,10 +8,6 @@ import Levenshtein
 from db.database import OCRDatabase
 
 
-# Configuration
-DB_FILE = "ocr_screenshots.db"
-
-
 def exact_search(db: OCRDatabase, search_term: str):
     """
     Perform an exact search for `search_term` in the 'ocr_text' field.

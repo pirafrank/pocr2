@@ -1,0 +1,28 @@
+# Configuration file for pocr2
+# 
+# This file should be placed in:
+# - Windows: %APPDATA%\pirafrank\pocr2\config\config.toml
+# - Linux/macOS: $XDG_CONFIG_HOME/pirafrank/pocr2/config/config.toml
+#              or ~/.config/pirafrank/pocr2/config/config.toml
+
+#
+# Do NOT use '\' chars! use '/' instead!
+#
+
+# Directory where screenshots are stored
+screenshots_dir = "C:/Users/YourUsername/Pictures/Screenshots"
+
+# Example for Linux/macOS:
+# screenshots_dir = "/home/username/Pictures/Screenshots"
+
+# Path to Tesseract OCR executable
+# Windows example:
+tesseract_path = "C:/Users/YourUsername/AppData/Local/Programs/Tesseract-OCR/tesseract.exe"
+# Linux/macOS example:
+# tesseract_path = "/usr/bin/tesseract"
+
+# Number of threads for parallel OCR processing
+max_workers = 4
+
+# Fuzzy search threshold (0.0 to 1.0)
+fuzzy_threshold = 0.5

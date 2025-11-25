@@ -5,14 +5,14 @@ CLI for searching OCR database.
 
 from db.database import OCRDatabase
 from query import exact_search, fuzzy_search
-
-
-# Configuration
-DB_FILE = "ocr_screenshots.db"
+from utils.config import DB_FILE, ensure_dirs
 
 
 def main():
     """Main query function."""
+    # Ensure all required directories exist
+    ensure_dirs()
+
     print("OCR Query Tool")
     print("=" * 60)
 
