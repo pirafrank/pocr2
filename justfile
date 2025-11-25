@@ -10,16 +10,28 @@ default:
   just --list
 
 # Setup virtual environment and install dependencies
+prepare:
+  python --version
+  python -m pip install virtualenv
+  python -m virtualenv .venv
+
+# Install requirements
 setup:
-  python -m venv .venv
+  .\.venv\Scripts\python.exe --version
+  .\.venv\Scripts\python.exe -m pip install --upgrade pip
   .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# Check python version
+check:
+  Write-Host "Using Python version:"
+  .\.venv\Scripts\python.exe --version
 
 # Run process.py from repo root
 process:
   .\.venv\Scripts\python.exe src\\process.py
 
 # Run query.py from repo root
-cli:
+search:
   .\.venv\Scripts\python.exe src\\cli.py
 
 # Run queries in GUI mode
