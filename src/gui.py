@@ -70,9 +70,35 @@ class OCRQueryGUI:
         ttk.Label(search_frame, text="Search:").grid(
             row=0, column=0, sticky=tk.W, padx=(0, 5)
         )
-        self.search_entry = ttk.Entry(search_frame)
-        self.search_entry.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 5))
+
+        # Entry container with clear button inside
+        entry_container = ttk.Frame(search_frame)
+        entry_container.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=(0, 5))
+        entry_container.columnconfigure(0, weight=1)
+
+        self.search_entry = ttk.Entry(entry_container)
+        self.search_entry.grid(row=0, column=0, sticky=(tk.W, tk.E))
         self.search_entry.bind("<Return>", lambda e: self.perform_search())
+        self.search_entry.bind("<KeyRelease>", self._on_entry_change)
+        self.search_entry.focus()
+
+        # Clear button (⌫ backspace icon) positioned inside the entry
+        self.clear_button = tk.Button(
+            entry_container,
+            text="⌫",
+            command=self._clear_search,
+            relief=tk.FLAT,
+            cursor="hand2",
+            fg="gray",
+            bg="white",
+            font=("TkDefaultFont", 10),
+            padx=3,
+            pady=1,
+            borderwidth=0,
+            highlightthickness=0,
+        )
+        # Initially hidden, will show when text is entered
+        self.clear_button.place_forget()
 
         self.search_button = ttk.Button(
             search_frame, text="▶ Search", command=self.perform_search
@@ -140,12 +166,28 @@ class OCRQueryGUI:
         )
         self.status_label.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
 
+    def _on_entry_change(self, event=None):
+        """Show/hide clear button based on entry content."""
+        if self.search_entry.get():
+            self.clear_button.place(
+                in_=self.search_entry, relx=1.0, rely=0.5, anchor=tk.E, x=-3
+            )
+            self.clear_button.lift()  # Bring to front
+        else:
+            self.clear_button.place_forget()
+
+    def _clear_search(self):
+        """Clear the search entry field."""
+        self.search_entry.delete(0, tk.END)
+        self.clear_button.place_forget()
+        self.search_entry.focus()
+
     def perform_search(self):
         """Execute the search query."""
         search_term = self.search_entry.get().strip()
 
         if not search_term:
-            messagebox.showwarning("Input Required", "Please enter a search term.")
+            messagebox.showinfo("Input Required", "Please enter a search term.")
             return
 
         # Clear previous results
@@ -174,14 +216,15 @@ class OCRQueryGUI:
                     # Create clickable filename
                     full_path = os.path.join(self.screenshots_dir, filename)
 
-                    # Insert filename as clickable link
-                    start_idx = self.results_text.index(tk.END)
-                    self.results_text.insert(tk.END, f"• {filename}\n")
-                    end_idx = self.results_text.index(f"{start_idx} lineend")
+                    # Insert bullet and filename
+                    self.results_text.insert(tk.END, "• ")
+                    link_start = self.results_text.index(tk.INSERT)
+                    self.results_text.insert(tk.END, f"{filename}\n")
+                    link_end = self.results_text.index(f"{link_start} lineend")
 
-                    # Store the full path as a tag
+                    # Store the full path as a tag (only on filename, not bullet)
                     tag_name = f"link_{filename}"
-                    self.results_text.tag_add(tag_name, start_idx, end_idx)
+                    self.results_text.tag_add(tag_name, link_start, link_end)
                     self.results_text.tag_config(
                         tag_name, foreground="blue", underline=1
                     )
