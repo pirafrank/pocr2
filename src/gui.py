@@ -8,10 +8,19 @@ from tkinter import ttk, messagebox
 import os
 import subprocess
 import platform
+import threading
 
 from db.database import OCRDatabase
 from query import exact_search, fuzzy_search
-from utils.config import DB_FILE, get_screenshots_dir, get_fuzzy_threshold, ensure_dirs
+from process import process
+from utils.config import (
+    DB_FILE,
+    get_screenshots_dir,
+    get_fuzzy_threshold,
+    ensure_dirs,
+    get_config_file,
+    get_max_workers,
+)
 
 
 class OCRQueryGUI:
@@ -69,6 +78,18 @@ class OCRQueryGUI:
             search_frame, text="▶ Search", command=self.perform_search
         )
         self.search_button.grid(row=0, column=2, sticky=tk.E)
+
+        # Update DB button, it runs OCR processing and updates the database with new content
+        self.update_button = ttk.Button(
+            search_frame, text="🔄 Update DB", command=self.start_update
+        )
+        self.update_button.grid(row=0, column=3, sticky=tk.E, padx=(5, 0))
+
+        # Open config button
+        self.config_button = ttk.Button(
+            search_frame, text="⚙ Config", command=self.open_config
+        )
+        self.config_button.grid(row=0, column=4, sticky=tk.E, padx=(5, 0))
 
         # Search mode section
         mode_frame = ttk.LabelFrame(main_frame, text="Search Mode", padding="5")
@@ -139,7 +160,9 @@ class OCRQueryGUI:
         try:
             # Perform search
             if self.search_mode.get() == 2:
-                matches = fuzzy_search(self.db, search_term, threshold=self.fuzzy_threshold)
+                matches = fuzzy_search(
+                    self.db, search_term, threshold=self.fuzzy_threshold
+                )
             else:
                 matches = exact_search(self.db, search_term)
 
@@ -207,6 +230,99 @@ class OCRQueryGUI:
             messagebox.showerror(
                 "Error", f"Failed to open file:\n{filepath}\n\nError: {str(e)}"
             )
+
+    def open_config(self):
+        """Open the config file in the default editor."""
+        config_file = get_config_file()
+
+        if not config_file.exists():
+            messagebox.showwarning(
+                "Config Not Found",
+                f"Config file not found at:\n{config_file}\n\nPlease create it first.",
+            )
+            return
+
+        self._open_file(str(config_file))
+
+    def start_update(self):
+        """Start the OCR processing in a background thread."""
+        # Disable buttons during processing
+        self.update_button.config(state=tk.DISABLED)
+        self.search_button.config(state=tk.DISABLED)
+
+        # Clear results area and show starting message
+        self.results_text.config(state=tk.NORMAL)
+        self.results_text.delete(1.0, tk.END)
+        self.results_text.insert(tk.END, "Starting OCR processing...\n\n")
+        self.results_text.config(state=tk.DISABLED)
+        self.status_label.config(text="Processing...")
+
+        # Run in background thread
+        thread = threading.Thread(target=self._run_update, daemon=True)
+        thread.start()
+
+    def _run_update(self):
+        """Run the OCR processing and update GUI with progress."""
+
+        screenshots_dir = get_screenshots_dir()
+        max_workers = get_max_workers()
+
+        try:
+            # Display initial info
+            self._append_to_results(f"Processing from: {screenshots_dir}\n")
+            self._append_to_results(f"Using {max_workers} threads\n\n")
+
+            # Define progress callback that updates GUI
+            def gui_progress_callback(filename: str, success: bool, message: str):
+                if success:
+                    self._append_to_results(f"✓ {filename}: {message}\n")
+                elif "Already in database" in message:
+                    self._append_to_results(f"⊘ {filename}: {message}\n")
+                else:
+                    self._append_to_results(f"✗ {filename}: {message}\n")
+
+            # Process using the process.py function
+            stats = process(prog_callback=gui_progress_callback)
+
+            # Display summary
+            summary = "\n" + "=" * 50 + "\n"
+            summary += "Processing Complete!\n"
+            summary += "=" * 50 + "\n"
+            summary += f"Total files found: {stats['total']}\n"
+            summary += f"Successfully processed: {stats['processed']}\n"
+            summary += f"Skipped (already in DB): {stats['skipped']}\n"
+            summary += f"Failed: {stats['failed']}\n"
+            summary += "=" * 50 + "\n"
+
+            self._append_to_results(summary)
+            self._update_status(
+                f"Complete: {stats['processed']} processed, {stats['skipped']} skipped, {stats['failed']} failed"
+            )
+
+        except Exception as e:
+            error_msg = f"\n\nError during processing: {str(e)}\n"
+            self._append_to_results(error_msg)
+            self._update_status("Processing failed")
+
+        finally:
+            # Re-enable buttons
+            self.root.after(0, lambda: self.update_button.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.search_button.config(state=tk.NORMAL))
+
+    def _append_to_results(self, text):
+        """Safely append text to results area from any thread."""
+
+        def append():
+            self.results_text.config(state=tk.NORMAL)
+            self.results_text.insert(tk.END, text)
+            self.results_text.see(tk.END)  # Auto-scroll to bottom
+            self.results_text.config(state=tk.DISABLED)
+
+        self.root.after(0, append)
+
+    def _update_status(self, text):
+        """Safely update status label from any thread."""
+        self.root.after(0, lambda: self.status_label.config(text=text))
 
     def close(self):
         """Clean up resources."""

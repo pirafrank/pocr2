@@ -30,13 +30,16 @@ def progress_callback(filename: str, success: bool, message: str):
         print(f"✗ {filename}: {message}")
 
 
-def main():
-    """Main processing function."""
+def process(prog_callback=None):
+    """Process screenshots folder and store OCR results in database.
+
+    Args:
+        prog_callback: Optional custom callback function(filename, success, message).
+                                 If None, uses the default progress_callback.
+    """
+
     # Ensure all required directories exist
     ensure_dirs()
-
-    print(f"Starting OCR processing from: {SCREENSHOTS_DIR}")
-    print(f"Using {MAX_WORKERS} threads\n")
 
     # Initialize database handler
     db = OCRDatabase(DB_FILE)
@@ -44,10 +47,28 @@ def main():
     # Initialize OCR processor
     processor = OCRProcessor(tesseract_path=TESSERACT_PATH, max_workers=MAX_WORKERS)
 
+    # Use custom callback if provided, otherwise use default
+    callback = prog_callback if prog_callback else progress_callback
+
     # Process all images in the folder
     stats = processor.process_folder(
-        folder_path=SCREENSHOTS_DIR, db_handler=db, progress_callback=progress_callback
+        folder_path=SCREENSHOTS_DIR, db_handler=db, progress_callback=callback
     )
+
+    # Cleanup
+    db.close()
+
+    return stats
+
+
+def main():
+    """Main processing function."""
+
+    print(f"Starting OCR processing from: {SCREENSHOTS_DIR}")
+    print(f"Using {MAX_WORKERS} threads\n")
+
+    # Process screenshots folder
+    stats = process()
 
     # Display summary
     print("\n" + "=" * 50)
@@ -59,8 +80,6 @@ def main():
     print(f"Failed: {stats['failed']}")
     print("=" * 50)
 
-    # Cleanup
-    db.close()
 
 if __name__ == "__main__":
     main()
