@@ -1,5 +1,10 @@
+"""
+OCR Query Tool
+Search OCR database using fuzzy text matching.
+"""
 import sqlite3
 import Levenshtein
+
 
 def fuzzy_search(db_path, search_term, threshold=0.6):
     """
@@ -28,6 +33,7 @@ def fuzzy_search(db_path, search_term, threshold=0.6):
     conn.close()
     return results
 
+
 def similarity_score(text1, text2):
     """
     Calculate approximate similarity score between two strings (0-1).
@@ -38,14 +44,25 @@ def similarity_score(text1, text2):
     ratio = Levenshtein.ratio(text1.lower(), text2.lower())
     return ratio
 
-if __name__ == "__main__":
+
+def main():
+    """Main query function."""
     db_file = 'ocr_screenshots.db'
     term_to_search = input("Enter text to search: ")
     matches = fuzzy_search(db_file, term_to_search, threshold=0.5)
 
     if matches:
-        print(f"Found {len(matches)} matches:")
+        print(f"\nFound {len(matches)} matches:")
         for filename, text in matches:
-            print(f"- {filename}")
+            print(f"\n{'='*60}")
+            print(f"File: {filename}")
+            print(f"{'='*60}")
+            # Show snippet of matching text
+            text_snippet = text[:200] + "..." if len(text) > 200 else text
+            print(f"Text: {text_snippet}")
     else:
-        print("No matches found.")
+        print("\nNo matches found.")
+
+
+if __name__ == "__main__":
+    main()

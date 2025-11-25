@@ -1,56 +1,61 @@
-import sqlite3
-import os
-from PIL import Image
-import pytesseract
+"""
+OCR Screenshot Processor
+Processes images from a folder using multithreaded OCR and stores results in SQLite database.
+"""
 
-# pip install pytesseract pillow
-# Install Tesseract: https://github.com/UB-Mannheim/tesseract/wiki
-
-pytesseract.pytesseract.tesseract_cmd = r'C:\\Users\\francesco\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe'
-
-#text = pytesseract.image_to_string(Image.open("C:\\Users\\francesco\\OneDrive - Leonardo S.p.a. - Div Cyber Security\\Screenshots\\Screenshot_1088.png"))
-#print(text)
+from db.database import OCRDatabase
+from utils.ocr_processor import OCRProcessor
 
 
-DB_FILE = 'ocr_screenshots.db'
-
-# SQLite DB setup
-conn = sqlite3.connect(DB_FILE)
-cursor = conn.cursor()
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS ocr_data (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filename TEXT UNIQUE,
-    ocr_text TEXT
+# Configuration
+DB_FILE = "ocr_screenshots.db"
+TESSERACT_PATH = (
+    r"C:\Users\francesco\\AppData\\Local\\Programs\\Tesseract-OCR\\tesseract.exe"
 )
-''')
-conn.commit()
+SCREENSHOTS_DIR = (
+    r"C:\\Users\francesco\\OneDrive - Leonardo S.p.a. - Div Cyber Security\\Screenshots"
+)
+MAX_WORKERS = 4  # Number of threads for parallel processing
 
 
-def file_exists_in_db(filename):
-    cursor.execute('SELECT 1 FROM ocr_data WHERE filename = ?', (filename,))
-    return cursor.fetchone() is not None
+def progress_callback(filename: str, success: bool, message: str):
+    """Callback function to display progress during processing."""
+    if success:
+        print(f"✓ {filename}: {message}")
+    elif "Already in database" in message:
+        print(f"⊘ {filename}: {message}")
+    else:
+        print(f"✗ {filename}: {message}")
 
-def save_to_db(filename, text):
-    if not file_exists_in_db(filename):
-        cursor.execute('INSERT INTO ocr_data (filename, ocr_text) VALUES (?, ?)', (filename, text))
-        conn.commit()
-        return True
-    return False
 
-def process_images(image_folder):
-    for filename in os.listdir(image_folder):
-        if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
-            full_path = os.path.join(image_folder, filename)
-            print(f"Processing {filename}...")
+def main():
+    """Main processing function."""
+    print(f"Starting OCR processing from: {SCREENSHOTS_DIR}")
+    print(f"Using {MAX_WORKERS} threads\n")
 
-            ocr_text = pytesseract.image_to_string(Image.open((full_path)))
-            if save_to_db(filename, ocr_text):
-                print(f"OCR saved for {filename}")
-            else:
-                print(f"{filename} already exists in the database. Skipping.")
+    # Initialize database handler
+    db = OCRDatabase(DB_FILE)
+
+    # Initialize OCR processor
+    processor = OCRProcessor(tesseract_path=TESSERACT_PATH, max_workers=MAX_WORKERS)
+
+    # Process all images in the folder
+    stats = processor.process_folder(
+        folder_path=SCREENSHOTS_DIR, db_handler=db, progress_callback=progress_callback
+    )
+
+    # Display summary
+    print("\n" + "=" * 50)
+    print("Processing Complete!")
+    print("=" * 50)
+    print(f"Total files found: {stats['total']}")
+    print(f"Successfully processed: {stats['processed']}")
+    print(f"Skipped (already in DB): {stats['skipped']}")
+    print(f"Failed: {stats['failed']}")
+    print("=" * 50)
+
+    # Cleanup
+    db.close()
 
 if __name__ == "__main__":
-    SCREENSHOTS_DIR = "C:\\Users\\francesco\\OneDrive - Leonardo S.p.a. - Div Cyber Security\\Screenshots"
-    process_images(SCREENSHOTS_DIR)
-    conn.close()
+    main()
