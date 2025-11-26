@@ -1,8 +1,9 @@
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from PIL import Image
+import cv2
 import pytesseract
 
 
@@ -32,22 +33,27 @@ class OCRProcessor:
         pytesseract.pytesseract.tesseract_cmd = tesseract_path
         self.supported_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif")
 
-    def extract_text(self, image_path: str) -> str:
+    def extract_text(self, image_source: Union[str, Image.Image]) -> str:
         """
         Extract text from a single image using OCR.
 
         Args:
-            image_path: Full path to the image file
+            image_source: Either a full path to the image file or a PIL Image object
 
         Returns:
             Extracted text from the image
         """
         try:
-            image = Image.open(image_path)
+            if isinstance(image_source, str):
+                image = Image.open(image_source)
+            else:
+                image = image_source
+
             text = pytesseract.image_to_string(image)
             return text
         except (IOError, OSError) as e:
-            print(f"Error processing {image_path}: {e}")
+            source_name = image_source if isinstance(image_source, str) else "PIL Image"
+            print(f"Error processing {source_name}: {e}")
             return ""
 
     def get_image_files(self, folder_path: str) -> List[str]:
@@ -67,8 +73,47 @@ class OCRProcessor:
                 image_files.append(full_path)
         return image_files
 
+    def resize_for_ocr(
+        self, image_path: str, scale_factor: float = 3.0
+    ) -> Union[Image.Image, None]:
+        """
+        Resize image for optimal OCR performance.
+
+        Args:
+            image_path: Path to the image file
+            scale_factor: Scaling factor for enlargement (default: 3.0)
+
+        Returns:
+            Resized PIL Image object, or None if processing fails
+        """
+        try:
+            img = cv2.imread(image_path)
+
+            if img is None:
+                print(f"Error: Could not read image from {image_path}")
+                return None
+
+            enlarged = cv2.resize(
+                img,
+                None,
+                fx=scale_factor,
+                fy=scale_factor,
+                interpolation=cv2.INTER_CUBIC,
+            )
+
+            # Convert BGR to RGB and return as PIL Image
+            img_rgb = cv2.cvtColor(enlarged, cv2.COLOR_BGR2RGB)
+            return Image.fromarray(img_rgb)
+        except Exception as e:
+            print(f"Error resizing image {image_path}: {e}")
+            return None
+
     def process_image(
-        self, image_path: str, db_handler, skip_existing: bool = True
+        self,
+        image_path: str,
+        db_handler,
+        skip_existing: bool = True,
+        scale_factor: float = 3.0,
     ) -> Tuple[str, ProcessingStatus]:
         """
         Process a single image: extract text and save to database.
@@ -77,6 +122,7 @@ class OCRProcessor:
             image_path: Full path to the image
             db_handler: Database handler instance
             skip_existing: Whether to skip files already in the database
+            scale_factor: Scaling factor for image enlargement (default: 3.0)
 
         Returns:
             Tuple of (filename, status)
@@ -87,8 +133,14 @@ class OCRProcessor:
         if skip_existing and db_handler.file_exists(filename):
             return filename, ProcessingStatus.ALREADY_IN_DB
 
-        # Extract text
-        ocr_text = self.extract_text(image_path)
+        # Resize image for better OCR performance
+        enlarged_image = self.resize_for_ocr(image_path, scale_factor)
+
+        if enlarged_image is None:
+            return filename, ProcessingStatus.FAILED
+
+        # Extract text from the enlarged image
+        ocr_text = self.extract_text(enlarged_image)
 
         if not ocr_text.strip():
             return filename, ProcessingStatus.FAILED
