@@ -33,6 +33,18 @@ class OCRQueryGUI:
         self.root.title("OCR Query Tool")
         self.root.geometry("800x600")
 
+        # Set application icon
+        try:
+            icon_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "assets", "icon_256x256.png")
+            )
+            print(f"Icon path: {icon_path}")
+            if os.path.exists(icon_path):
+                icon = tk.PhotoImage(file=icon_path)
+                self.root.iconphoto(False, icon)
+        except Exception:
+            pass  # Silently fail if icon not available
+
         # Ensure all required directories exist
         ensure_dirs()
 
