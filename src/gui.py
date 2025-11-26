@@ -320,7 +320,7 @@ class OCRQueryGUI:
                 if success:
                     self._append_to_results(f"✓ {filename}: {message}\n")
                 elif "Already in database" in message:
-                    self._append_to_results(f"⊘ {filename}: {message}\n")
+                    pass  # Make UI faster: skip printing filename for already processed files
                 else:
                     self._append_to_results(f"✗ {filename}: {message}\n")
 
