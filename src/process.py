@@ -4,7 +4,7 @@ Processes images from a folder using multithreaded OCR and stores results in SQL
 """
 
 from db.database import OCRDatabase
-from utils.ocr_processor import OCRProcessor
+from utils.ocr_processor import OCRProcessor, ProcessingStatus
 from utils.config import (
     DB_FILE,
     get_screenshots_dir,
@@ -20,21 +20,21 @@ MAX_WORKERS = get_max_workers()
 SCREENSHOTS_DIR = get_screenshots_dir()
 
 
-def progress_callback(filename: str, success: bool, message: str):
+def progress_callback(filename: str, status: ProcessingStatus):
     """Callback function to display progress during processing."""
-    if success:
-        print(f"✓ {filename}: {message}")
-    elif "Already in database" in message:
-        print(f"⊘ {filename}: {message}")
+    if status == ProcessingStatus.SUCCESS:
+        print(f"✓ {filename}: Successfully processed")
+    elif status == ProcessingStatus.ALREADY_IN_DB:
+        print(f"⊘ {filename}: Already in database")
     else:
-        print(f"✗ {filename}: {message}")
+        print(f"✗ {filename}: Failed")
 
 
 def process(prog_callback=None):
     """Process screenshots folder and store OCR results in database.
 
     Args:
-        prog_callback: Optional custom callback function(filename, success, message).
+        prog_callback: Optional custom callback function(filename, status).
                                  If None, uses the default progress_callback.
     """
 

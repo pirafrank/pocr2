@@ -13,6 +13,7 @@ import threading
 from db.database import OCRDatabase
 from query import exact_search, fuzzy_search
 from process import process
+from utils.ocr_processor import ProcessingStatus
 from utils.config import (
     DB_FILE,
     get_screenshots_dir,
@@ -316,13 +317,13 @@ class OCRQueryGUI:
             self._append_to_results(f"Using {max_workers} threads\n\n")
 
             # Define progress callback that updates GUI
-            def gui_progress_callback(filename: str, success: bool, message: str):
-                if success:
-                    self._append_to_results(f"✓ {filename}: {message}\n")
-                elif "Already in database" in message:
+            def gui_progress_callback(filename: str, status: ProcessingStatus):
+                if status == ProcessingStatus.SUCCESS:
+                    self._append_to_results(f"✓ {filename}: Successfully processed\n")
+                elif status == ProcessingStatus.ALREADY_IN_DB:
                     pass  # Make UI faster: skip printing filename for already processed files
                 else:
-                    self._append_to_results(f"✗ {filename}: {message}\n")
+                    self._append_to_results(f"✗ {filename}: Failed\n")
 
             # Process using the process.py function
             stats = process(prog_callback=gui_progress_callback)

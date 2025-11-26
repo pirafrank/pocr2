@@ -1,8 +1,17 @@
 import os
 from typing import List, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from enum import Enum
 from PIL import Image
 import pytesseract
+
+
+class ProcessingStatus(Enum):
+    """Status of image processing operation."""
+
+    SUCCESS = "success"
+    ALREADY_IN_DB = "already_in_db"
+    FAILED = "failed"
 
 
 class OCRProcessor:
@@ -60,7 +69,7 @@ class OCRProcessor:
 
     def process_image(
         self, image_path: str, db_handler, skip_existing: bool = True
-    ) -> Tuple[str, bool, str]:
+    ) -> Tuple[str, ProcessingStatus]:
         """
         Process a single image: extract text and save to database.
 
@@ -70,25 +79,25 @@ class OCRProcessor:
             skip_existing: Whether to skip files already in the database
 
         Returns:
-            Tuple of (filename, success, message)
+            Tuple of (filename, status)
         """
         filename = os.path.basename(image_path)
 
         # Check if already processed
         if skip_existing and db_handler.file_exists(filename):
-            return filename, False, "Already in database"
+            return filename, ProcessingStatus.ALREADY_IN_DB
 
         # Extract text
         ocr_text = self.extract_text(image_path)
 
         if not ocr_text.strip():
-            return filename, False, "No text extracted"
+            return filename, ProcessingStatus.FAILED
 
         # Save to database
         if db_handler.save_ocr_data(filename, ocr_text):
-            return filename, True, "Successfully processed"
+            return filename, ProcessingStatus.SUCCESS
         else:
-            return filename, False, "Failed to save (duplicate)"
+            return filename, ProcessingStatus.FAILED
 
     def process_folder(
         self, folder_path: str, db_handler, progress_callback=None
@@ -99,7 +108,7 @@ class OCRProcessor:
         Args:
             folder_path: Path to folder containing images
             db_handler: Database handler instance
-            progress_callback: Optional callback function(filename, success, message)
+            progress_callback: Optional callback function(filename, status)
 
         Returns:
             Dictionary with processing statistics
@@ -122,17 +131,17 @@ class OCRProcessor:
 
             # Process results as they complete
             for future in as_completed(future_to_file):
-                filename, success, message = future.result()
+                filename, status = future.result()
 
-                if success:
+                if status == ProcessingStatus.SUCCESS:
                     stats["processed"] += 1
-                elif "Already in database" in message:
+                elif status == ProcessingStatus.ALREADY_IN_DB:
                     stats["skipped"] += 1
                 else:
                     stats["failed"] += 1
 
                 # Call progress callback if provided
                 if progress_callback:
-                    progress_callback(filename, success, message)
+                    progress_callback(filename, status)
 
         return stats
