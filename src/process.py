@@ -10,15 +10,13 @@ from utils.config import (
     get_screenshots_dir,
     get_tesseract_path,
     get_max_workers,
+    get_ocr_engine,
+    get_ollama_host,
+    get_ollama_model,
+    get_ollama_prompt,
     ensure_dirs,
+    set_config_file,
 )
-
-
-# Configuration
-TESSERACT_PATH = get_tesseract_path()
-MAX_WORKERS = get_max_workers()
-SCREENSHOTS_DIR = get_screenshots_dir()
-
 
 def progress_callback(filename: str, status: ProcessingStatus):
     """Callback function to display progress during processing."""
@@ -30,29 +28,47 @@ def progress_callback(filename: str, status: ProcessingStatus):
         print(f"✗ {filename}: Failed")
 
 
-def process(prog_callback=None):
+def process(prog_callback=None, config_path=None):
     """Process screenshots folder and store OCR results in database.
 
     Args:
         prog_callback: Optional custom callback function(filename, status).
                                  If None, uses the default progress_callback.
+        config_path: Optional path to custom config.toml.
     """
+    if config_path:
+        set_config_file(config_path)
 
     # Ensure all required directories exist
     ensure_dirs()
+
+    tesseract_path = get_tesseract_path()
+    max_workers = get_max_workers()
+    screenshots_dir = get_screenshots_dir()
+    ocr_engine = get_ocr_engine()
+    ollama_host = get_ollama_host()
+    ollama_model = get_ollama_model()
+    ollama_prompt = get_ollama_prompt()
 
     # Initialize database handler
     db = OCRDatabase(DB_FILE)
 
     # Initialize OCR processor
-    processor = OCRProcessor(tesseract_path=TESSERACT_PATH, max_workers=MAX_WORKERS)
+    processor = OCRProcessor(
+        tesseract_path=tesseract_path,
+        max_workers=max_workers,
+        ocr_engine=ocr_engine,
+        ollama_host=ollama_host,
+        ollama_model=ollama_model,
+        ollama_prompt=ollama_prompt,
+    )
 
     # Use custom callback if provided, otherwise use default
     callback = prog_callback if prog_callback else progress_callback
 
     # Process all images in the folder
     stats = processor.process_folder(
-        folder_path=SCREENSHOTS_DIR, db_handler=db, progress_callback=callback
+        folder_path=screenshots_dir, db_handler=db, progress_callback=callback
     )
 
     # Cleanup
@@ -61,14 +77,26 @@ def process(prog_callback=None):
     return stats
 
 
-def main():
+def main(config_path=None):
     """Main processing function."""
+    if config_path:
+        set_config_file(config_path)
 
-    print(f"Starting OCR processing from: {SCREENSHOTS_DIR}")
-    print(f"Using {MAX_WORKERS} threads\n")
+    screenshots_dir = get_screenshots_dir()
+    max_workers = get_max_workers()
+    ocr_engine = get_ocr_engine()
+    ollama_host = get_ollama_host()
+    ollama_model = get_ollama_model()
+
+    print(f"Starting OCR processing from: {screenshots_dir}")
+    print(f"OCR engine: {ocr_engine}")
+    if ocr_engine == "glm-ocr":
+        print(f"Ollama host: {ollama_host}")
+        print(f"Ollama model: {ollama_model}")
+    print(f"Using {max_workers} threads\n")
 
     # Process screenshots folder
-    stats = process()
+    stats = process(config_path=config_path)
 
     # Display summary
     print("\n" + "=" * 50)

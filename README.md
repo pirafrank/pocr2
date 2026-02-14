@@ -46,11 +46,39 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Configuration is managed via the `config.toml` file in known locations. See `config.example.toml` for reference.
+Configuration is managed via the `config.toml` file in known locations. See `config.toml.example` for reference.
+
+You can also provide a custom config file path at runtime:
+
+```bash
+python src/main.py index --config C:/path/to/config.toml
+```
+
+If `--config` is not provided, POCR2 uses the default known config locations.
 
 ## Usage
 
-Usage is managed via `just` commands to make it simple. Check the `justfile` file for more details or to know how to run the scripts manually.
+POCR2 now uses a unified entrypoint:
+
+```bash
+python src/main.py <command> [--config C:/path/to/config.toml]
+```
+
+Commands:
+- `index` runs OCR processing and updates the database.
+- `search` runs CLI search mode.
+- `--gui` launches the graphical interface.
+
+Examples:
+
+```bash
+python src/main.py index
+python src/main.py search
+python src/main.py --gui
+python src/main.py index --config C:/path/to/config.toml
+```
+
+`just` commands are still available for convenience. Check `justfile` for details.
 
 ### GUI
 

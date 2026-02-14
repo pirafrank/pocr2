@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from PIL import Image
 import pytesseract
+import ollama
 
 
 class ProcessingStatus(Enum):
@@ -19,18 +20,72 @@ class OCRProcessor:
     Multithreaded OCR processor for image files.
     """
 
-    def __init__(self, tesseract_path: str, max_workers: int = 4):
+    def __init__(
+        self,
+        tesseract_path: str,
+        max_workers: int = 4,
+        ocr_engine: str = "tesseract",
+        ollama_host: str = "http://localhost:11434",
+        ollama_model: str = "glm-ocr",
+        ollama_prompt: str = "Extract the text from this image and format it as Markdown.",
+    ):
         """
         Initialize the OCR processor.
 
         Args:
             tesseract_path: Path to the tesseract executable
             max_workers: Maximum number of threads for parallel processing
+            ocr_engine: OCR engine to use ("tesseract" or "glm-ocr")
+            ollama_host: Ollama server URL
+            ollama_model: Ollama model name
+            ollama_prompt: Prompt for GLM-OCR extraction
         """
         self.tesseract_path = tesseract_path
         self.max_workers = max_workers
-        pytesseract.pytesseract.tesseract_cmd = tesseract_path
+        self.ocr_engine = ocr_engine.strip().lower()
+        self.ollama_host = ollama_host
+        self.ollama_model = ollama_model
+        self.ollama_prompt = ollama_prompt
+        self.ollama_client = None
         self.supported_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif")
+
+        if self.ocr_engine == "glm-ocr":
+            self.ollama_client = ollama.Client(host=self.ollama_host)
+        else:
+            pytesseract.pytesseract.tesseract_cmd = tesseract_path
+
+    def _extract_text_tesseract(self, image_path: str) -> str:
+        """Extract text from image using Tesseract."""
+        try:
+            image = Image.open(image_path)
+            return pytesseract.image_to_string(image)
+        except (IOError, OSError) as e:
+            print(f"Error processing {image_path} with Tesseract: {e}")
+            return ""
+
+    def _extract_text_glm_ocr(self, image_path: str) -> str:
+        """Extract text from image using Ollama GLM-OCR."""
+        if not self.ollama_client:
+            print("GLM-OCR is selected but Ollama client is not initialized.")
+            return ""
+
+        try:
+            response = self.ollama_client.chat(
+                model=self.ollama_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": self.ollama_prompt,
+                        "images": [image_path],
+                    }
+                ],
+            )
+            return response.get("message", {}).get("content", "")
+        except Exception as e:
+            print(
+                f"Error processing {image_path} with GLM-OCR via {self.ollama_host}: {e}"
+            )
+            return ""
 
     def extract_text(self, image_path: str) -> str:
         """
@@ -42,13 +97,9 @@ class OCRProcessor:
         Returns:
             Extracted text from the image
         """
-        try:
-            image = Image.open(image_path)
-            text = pytesseract.image_to_string(image)
-            return text
-        except (IOError, OSError) as e:
-            print(f"Error processing {image_path}: {e}")
-            return ""
+        if self.ocr_engine == "glm-ocr":
+            return self._extract_text_glm_ocr(image_path)
+        return self._extract_text_tesseract(image_path)
 
     def get_image_files(self, folder_path: str) -> List[str]:
         """
