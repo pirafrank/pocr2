@@ -105,11 +105,17 @@ class OCRQueryGUI:
         )
         self.update_button.grid(row=0, column=3, sticky=tk.E, padx=(5, 0))
 
+        # Open screenshots folder button
+        self.screenshots_button = ttk.Button(
+            search_frame, text="📁 Screenshots", command=self.open_screenshots_folder
+        )
+        self.screenshots_button.grid(row=0, column=4, sticky=tk.E, padx=(5, 0))
+
         # Open config button
         self.config_button = ttk.Button(
             search_frame, text="⚙ Config", command=self.open_config
         )
-        self.config_button.grid(row=0, column=4, sticky=tk.E, padx=(5, 0))
+        self.config_button.grid(row=0, column=5, sticky=tk.E, padx=(5, 0))
 
         # Search mode section
         mode_frame = ttk.LabelFrame(main_frame, text="Search Mode", padding="5")
@@ -268,6 +274,20 @@ class OCRQueryGUI:
                 "Error", f"Failed to open file:\n{filepath}\n\nError: {str(e)}"
             )
 
+    def _open_folder(self, folderpath):
+        """Open a folder in the system's file explorer."""
+        try:
+            if platform.system() == "Windows":
+                os.startfile(folderpath)
+            elif platform.system() == "Darwin":
+                subprocess.run(["open", folderpath], check=True)
+            else:  # Linux
+                subprocess.run(["xdg-open", folderpath], check=True)
+        except Exception as e:
+            messagebox.showerror(
+                "Error", f"Failed to open folder:\n{folderpath}\n\nError: {str(e)}"
+            )
+
     def open_config(self):
         """Open the config file in the default editor."""
         config_file = get_config_file()
@@ -280,6 +300,19 @@ class OCRQueryGUI:
             return
 
         self._open_file(str(config_file))
+
+    def open_screenshots_folder(self):
+        """Open the screenshots folder in the system file explorer."""
+        screenshots_dir = get_screenshots_dir()
+
+        if not screenshots_dir.exists():
+            messagebox.showwarning(
+                "Folder Not Found",
+                f"Screenshots folder not found at:\n{screenshots_dir}\n\nPlease check your config.",
+            )
+            return
+
+        self._open_folder(str(screenshots_dir))
 
     def start_update(self):
         """Start the OCR processing in a background thread."""
