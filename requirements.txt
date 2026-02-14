@@ -1,5 +1,0 @@
-pillow==11.3.0
-pytesseract==0.3.13
-Levenshtein==0.27.3
-tomli==2.0.1; python_version < '3.11'
-ollama>=0.4.5

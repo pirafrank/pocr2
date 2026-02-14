@@ -7,10 +7,8 @@ Routes commands to index/search/gui flows and supports optional config override.
 import argparse
 import sys
 
-import cli
-import gui
-import process
-from utils.config import set_config_file
+from . import cli, gui, process
+from .utils.config import set_config_file
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -8,4 +8,4 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
 # Launch the GUI using pythonw.exe (no console window)
-& "$ScriptDir\.venv\Scripts\pythonw.exe" "$ScriptDir\src\gui.py"
+& "$ScriptDir\.venv\Scripts\pythonw.exe" -m src.main --gui

@@ -38,3 +38,10 @@ dependencies = [
 Homepage = "https://github.com/pirafrank/pocr2"
 Repository = "https://github.com/pirafrank/pocr2"
 Issues = "https://github.com/pirafrank/pocr2/issues"
+
+[project.scripts]
+pocr2 = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

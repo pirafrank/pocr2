@@ -5,7 +5,7 @@ Search OCR database using fuzzy text matching.
 
 import Levenshtein
 
-from db.database import OCRDatabase
+from .db.database import OCRDatabase
 
 
 def exact_search(db: OCRDatabase, search_term: str):

@@ -10,11 +10,11 @@ import subprocess
 import platform
 import threading
 
-from db.database import OCRDatabase
-from query import exact_search, fuzzy_search
-from process import process
-from utils.ocr_processor import ProcessingStatus
-from utils.config import (
+from .db.database import OCRDatabase
+from .query import exact_search, fuzzy_search
+from .process import process
+from .utils.ocr_processor import ProcessingStatus
+from .utils.config import (
     DB_FILE,
     get_screenshots_dir,
     get_fuzzy_threshold,

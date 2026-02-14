@@ -3,9 +3,9 @@ OCR Screenshot Processor
 Processes images from a folder using multithreaded OCR and stores results in SQLite database.
 """
 
-from db.database import OCRDatabase
-from utils.ocr_processor import OCRProcessor, ProcessingStatus
-from utils.config import (
+from .db.database import OCRDatabase
+from .utils.ocr_processor import OCRProcessor, ProcessingStatus
+from .utils.config import (
     DB_FILE,
     get_screenshots_dir,
     get_tesseract_path,

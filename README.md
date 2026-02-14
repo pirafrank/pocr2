@@ -22,9 +22,25 @@ So boost privacy and avoid sending your images to third-party services, it runs 
 ## Requirements
 
 - Python 3.10 and above. Tested on Python 3.10, 3.11, 3.12, and 3.13.
-- Additional dependencies in `requirements.txt`
+- Dependencies are managed in `pyproject.toml`.
 
 ## Installation
+
+1. Clone the repository or [download the source code](https://github.com/pirafrank/pocr2/archive/refs/heads/main.zip).
+
+2. Install it
+
+```bash
+pip install .
+```
+
+or via `uv`:
+
+```bash
+uv pip install .
+```
+
+## Installation (Development)
 
 1. Clone the repository or [download the source code](https://github.com/pirafrank/pocr2/archive/refs/heads/main.zip).
 
@@ -41,7 +57,7 @@ or manually:
 python -m pip install virtualenv
 python -m virtualenv .venv
 source .venv/bin/activate  # On Windows use `.venv\Scripts\activate.ps1`
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Configuration
@@ -51,17 +67,17 @@ Configuration is managed via the `config.toml` file in known locations. See `con
 You can also provide a custom config file path at runtime:
 
 ```bash
-python src/main.py index --config C:/path/to/config.toml
+pocr2 index --config C:/path/to/config.toml
 ```
 
 If `--config` is not provided, POCR2 uses the default known config locations.
 
 ## Usage
 
-POCR2 now uses a unified entrypoint:
+POCR2 uses a unified entrypoint:
 
 ```bash
-python src/main.py <command> [--config C:/path/to/config.toml]
+pocr2 <command> [--config C:/path/to/config.toml]
 ```
 
 Commands:
@@ -72,13 +88,19 @@ Commands:
 Examples:
 
 ```bash
-python src/main.py index
-python src/main.py search
-python src/main.py --gui
-python src/main.py index --config C:/path/to/config.toml
+pocr2 index
+pocr2 search
+pocr2 --gui
+pocr2 index --config C:/path/to/config.toml
 ```
 
 `just` commands are still available for convenience. Check `justfile` for details.
+
+Alternative module invocation (without script wrapper):
+
+```bash
+python -m src.main index
+```
 
 ### GUI
 

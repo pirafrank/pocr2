@@ -9,6 +9,10 @@ set windows-powershell
 default:
   just --list
 
+# Compile
+compile:
+  .\.venv\Scripts\python.exe -m compileall .
+
 # Setup virtual environment and install dependencies
 prepare:
   python --version
@@ -19,24 +23,24 @@ prepare:
 setup:
   .\.venv\Scripts\python.exe --version
   .\.venv\Scripts\python.exe -m pip install --upgrade pip
-  .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+  .\.venv\Scripts\python.exe -m pip install -e .
 
 # Check python version
 check:
   Write-Host "Using Python version:"
   .\.venv\Scripts\python.exe --version
 
-# Run process.py from repo root
+# Run OCR indexing command
 process:
-  .\.venv\Scripts\python.exe src\\process.py
+  .\.venv\Scripts\pocr2.exe index
 
-# Run query.py from repo root
+# Run CLI search command
 search:
-  .\.venv\Scripts\python.exe src\\cli.py
+  .\.venv\Scripts\pocr2.exe search
 
 # Run queries in GUI mode
 run:
-  .\.venv\Scripts\python.exe src\\gui.py
+  .\.venv\Scripts\pocr2.exe --gui
 
 # Clean up virtual environment
 clean:

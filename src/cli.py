@@ -3,9 +3,9 @@ OCR Query
 CLI for searching OCR database.
 """
 
-from db.database import OCRDatabase
-from query import exact_search, fuzzy_search
-from utils.config import DB_FILE, ensure_dirs
+from .db.database import OCRDatabase
+from .query import exact_search, fuzzy_search
+from .utils.config import DB_FILE, ensure_dirs
 
 
 def main():
