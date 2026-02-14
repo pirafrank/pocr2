@@ -1,23 +1,29 @@
 # POCR 2
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-An Optical Character Recognition (OCR) tool to recognize, save, and query data from a folder full of images with lots of text. Use cases are folders with documents, recipes, or screenshots you made to remember things.
+A smart and privacy-focused Optical Character Recognition (OCR) tool to recognize, save, and query data from a folder full of images with lots of text. It runs locally and is fast, multi-platform, and multi-threaded.
 
-So boost privacy and avoid sending your images to third-party services, it runs locally on your machine. It's fast, multi-platform, and multi-threaded.
+Born as a personal tool. Not meant to be famous.
 
-<img src="docs/images/001.png" alt="POCR 2 Screenshot 1" width="450">
-<img src="docs/images/002.png" alt="POCR 2 Screenshot 2" width="450">
+<img src="docs/images/gui_002.png" alt="POCR 2 Screenshot 2" width="450">
+
+## Use cases
+
+- folders with documents and recipes
+- work environments and workflows where sending images to third-party services is not allowed
+- you make screenshots during calls to remember things
 
 ## Features
 
 - Image text extraction from multiple image formats (PNG, JPG, BMP, etc.)
 - Local processing for enhanced privacy
-- Powered by tesseract OCR engine
-- Dead-simple GUI and CLI interfaces
+- OCR engine selection: choose `tesseract` for CPU computation or `ollama` for AI-powered OCR via models provided by [Ollama](https://ollama.com/)
 - Multi-threaded for performance
+- Optional custom database path via config
+- Simple GUI and CLI interfaces
 
 ## Requirements
 
@@ -72,6 +78,15 @@ pocr2 index --config C:/path/to/config.toml
 
 If `--config` is not provided, POCR2 uses the default known config locations.
 
+Key options in `config.toml`:
+
+- `screenshots_dir`: directory with images to index.
+- `db_path` (optional): custom SQLite path. If omitted, POCR2 uses the default data directory.
+- `ocr_engine`: choose `tesseract` or `ollama`.
+- `ollama_host`, `ollama_model`, `ollama_prompt`: used when `ocr_engine = "ollama"`.
+- `max_workers`: OCR parallelism.
+- `fuzzy_threshold`: default threshold for fuzzy search.
+
 ## Usage
 
 POCR2 uses a unified entrypoint:
@@ -121,6 +136,11 @@ Query the database for text:
 ```
 just search
 ```
+
+## Documentation
+
+- [Code architecture](docs/architecture.md)
+- [Tesseract vs Ollama OCR](docs/ocr-comparison.md), including GPU usage context and screenshots.
 
 ## About the name
 
