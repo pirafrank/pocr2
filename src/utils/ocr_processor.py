@@ -35,10 +35,10 @@ class OCRProcessor:
         Args:
             tesseract_path: Path to the tesseract executable
             max_workers: Maximum number of threads for parallel processing
-            ocr_engine: OCR engine to use ("tesseract" or "glm-ocr")
+            ocr_engine: OCR engine to use ("tesseract" or "ollama")
             ollama_host: Ollama server URL
             ollama_model: Ollama model name
-            ollama_prompt: Prompt for GLM-OCR extraction
+            ollama_prompt: Prompt for Ollama OCR extraction
         """
         self.tesseract_path = tesseract_path
         self.max_workers = max_workers
@@ -49,7 +49,7 @@ class OCRProcessor:
         self.ollama_client = None
         self.supported_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".gif")
 
-        if self.ocr_engine == "glm-ocr":
+        if self.ocr_engine == "ollama":
             self.ollama_client = ollama.Client(host=self.ollama_host)
         else:
             pytesseract.pytesseract.tesseract_cmd = tesseract_path
@@ -63,10 +63,10 @@ class OCRProcessor:
             print(f"Error processing {image_path} with Tesseract: {e}")
             return ""
 
-    def _extract_text_glm_ocr(self, image_path: str) -> str:
-        """Extract text from image using Ollama GLM-OCR."""
+    def _extract_text_ollama(self, image_path: str) -> str:
+        """Extract text from image using Ollama."""
         if not self.ollama_client:
-            print("GLM-OCR is selected but Ollama client is not initialized.")
+            print("Ollama OCR is selected but Ollama client is not initialized.")
             return ""
 
         try:
@@ -83,7 +83,7 @@ class OCRProcessor:
             return response.get("message", {}).get("content", "")
         except Exception as e:
             print(
-                f"Error processing {image_path} with GLM-OCR via {self.ollama_host}: {e}"
+                f"Error processing {image_path} with Ollama via {self.ollama_host}: {e}"
             )
             return ""
 
@@ -97,8 +97,8 @@ class OCRProcessor:
         Returns:
             Extracted text from the image
         """
-        if self.ocr_engine == "glm-ocr":
-            return self._extract_text_glm_ocr(image_path)
+        if self.ocr_engine == "ollama":
+            return self._extract_text_ollama(image_path)
         return self._extract_text_tesseract(image_path)
 
     def get_image_files(self, folder_path: str) -> List[str]:

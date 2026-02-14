@@ -9,6 +9,18 @@ set windows-powershell
 default:
   just --list
 
+# Lint
+lint:
+  ruff check .
+
+# Format
+format:
+  ruff format .
+
+# Fix
+fix:
+  ruff check --fix .
+
 # Compile
 compile:
   .\.venv\Scripts\python.exe -m compileall .
@@ -31,7 +43,7 @@ check:
   .\.venv\Scripts\python.exe --version
 
 # Run OCR indexing command
-process:
+index:
   .\.venv\Scripts\pocr2.exe index
 
 # Run CLI search command

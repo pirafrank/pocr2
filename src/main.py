@@ -7,7 +7,7 @@ Routes commands to index/search/gui flows and supports optional config override.
 import argparse
 import sys
 
-from . import cli, gui, process
+from . import cli, gui, index
 from .utils.config import set_config_file
 
 
@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
         "command",
         nargs="?",
         choices=("index", "search"),
-        help="Run in command mode: 'index' (OCR processing) or 'search' (query mode).",
+        help="Run in command mode: 'index' (OCR indexing) or 'search' (query mode).",
     )
     parser.add_argument(
         "--gui",
@@ -55,7 +55,7 @@ def main() -> int:
         return 0
 
     if args.command == "index":
-        process.main(config_path=args.config)
+        index.main(config_path=args.config)
         return 0
 
     cli.main()

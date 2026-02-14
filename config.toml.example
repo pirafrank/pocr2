@@ -30,10 +30,10 @@ tesseract_path = "C:/Users/YourUsername/AppData/Local/Programs/Tesseract-OCR/tes
 # Linux/macOS example:
 # tesseract_path = "/usr/bin/tesseract"
 
-# OCR engine to use: "tesseract" or "glm-ocr"
+# OCR engine to use: "tesseract" or "ollama"
 ocr_engine = "tesseract"
 
-# Ollama server URL for glm-ocr (local or remote)
+# Ollama server URL (local or remote)
 # Local example:
 ollama_host = "http://localhost:11434"
 # Remote example:
@@ -42,7 +42,7 @@ ollama_host = "http://localhost:11434"
 # Ollama model name
 ollama_model = "glm-ocr"
 
-# Prompt used for GLM-OCR extraction
+# Prompt used for Ollama OCR extraction
 ollama_prompt = "Extract the text from this image and format it as Markdown."
 
 # Number of threads for parallel OCR processing
