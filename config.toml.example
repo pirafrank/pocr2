@@ -1,5 +1,5 @@
 # Configuration file for pocr2
-# 
+#
 # This file should be placed in:
 # - Windows: %APPDATA%\pirafrank\pocr2\config\config.toml
 # - Linux/macOS: $XDG_CONFIG_HOME/pirafrank/pocr2/config/config.toml
@@ -14,6 +14,15 @@ screenshots_dir = "C:/Users/YourUsername/Pictures/Screenshots"
 
 # Example for Linux/macOS:
 # screenshots_dir = "/home/username/Pictures/Screenshots"
+
+# Optional path to SQLite database file.
+# If omitted, the default is:
+# - Windows: %LOCALAPPDATA%/pirafrank/pocr2/data/pocr2.db
+# - Linux/macOS: ~/.local/share/pirafrank/pocr2/data/pocr2.db
+# Windows example:
+db_path = "C:/Users/YourUsername/Some/Directory/pocr2.db"
+# Linux/macOS example:
+# db_path = "/home/username/.local/share/pirafrank/pocr2/data/pocr2.db"
 
 # Path to Tesseract OCR executable
 # Windows example:

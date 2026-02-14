@@ -66,7 +66,21 @@ def set_config_file(path: Optional[str | Path]) -> None:
 
 def get_db_file() -> Path:
     """Get the database file path."""
-    return get_data_dir() / "pocr2.db"
+    default_db_file = get_data_dir() / "pocr2.db"
+    config = load_config()
+    db_path = str(config.get("db_path", "")).strip()
+
+    if not db_path:
+        db_file = default_db_file
+    else:
+        db_file = Path(db_path).expanduser()
+        if not db_file.is_absolute():
+            db_file = (Path.cwd() / db_file).resolve()
+        else:
+            db_file = db_file.resolve()
+
+    db_file.parent.mkdir(parents=True, exist_ok=True)
+    return db_file
 
 
 def load_config() -> dict:
@@ -74,6 +88,7 @@ def load_config() -> dict:
     config_file = get_config_file()
     default_config = {
         "screenshots_dir": str(Path.home() / "Pictures" / "Screenshots"),
+        "db_path": str(get_data_dir() / "pocr2.db"),
         "ocr_engine": "tesseract",
         "ollama_host": "http://localhost:11434",
         "ollama_model": "glm-ocr",
@@ -88,6 +103,7 @@ def load_config() -> dict:
             screenshots_path = default_config["screenshots_dir"].replace("\\", "/")
             toml_data = (
                 f'screenshots_dir = "{screenshots_path}"\n'
+                f'db_path = "{default_config["db_path"].replace("\\\\", "/")}"\n'
                 f'ocr_engine = "{default_config["ocr_engine"]}"\n'
                 f'ollama_host = "{default_config["ollama_host"]}"\n'
                 f'ollama_model = "{default_config["ollama_model"]}"\n'
