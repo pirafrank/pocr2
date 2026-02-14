@@ -5,7 +5,7 @@ CLI for searching OCR database.
 
 from .db.database import OCRDatabase
 from .query import exact_search, fuzzy_search
-from .utils.config import DB_FILE, ensure_dirs
+from .utils.config import ensure_dirs, get_db_file
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     search_mode = input("Search mode (1=exact, 2=fuzzy): ").strip()
 
     # Initialize database handler
-    db = OCRDatabase(DB_FILE)
+    db = OCRDatabase(get_db_file())
 
     try:
         if search_mode == "2":

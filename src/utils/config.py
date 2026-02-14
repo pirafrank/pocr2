@@ -12,6 +12,7 @@ except ImportError:
     import tomli as tomllib
 
 _CONFIG_FILE_OVERRIDE: Optional[Path] = None
+_CONFIG_CACHE: Optional[dict] = None
 
 
 def get_config_dir() -> Path:
@@ -57,11 +58,19 @@ def get_config_file() -> Path:
 
 def set_config_file(path: Optional[str | Path]) -> None:
     """Override config file location at runtime; pass None to clear override."""
-    global _CONFIG_FILE_OVERRIDE
+    global _CONFIG_FILE_OVERRIDE, _CONFIG_CACHE
     if path is None:
         _CONFIG_FILE_OVERRIDE = None
+        _CONFIG_CACHE = None
         return
     _CONFIG_FILE_OVERRIDE = Path(path).expanduser().resolve()
+    _CONFIG_CACHE = None
+
+
+def clear_config_cache() -> None:
+    """Clear in-memory config cache so the next read reloads from disk."""
+    global _CONFIG_CACHE
+    _CONFIG_CACHE = None
 
 
 def get_db_file() -> Path:
@@ -85,6 +94,10 @@ def get_db_file() -> Path:
 
 def load_config() -> dict:
     """Load configuration from config.toml file."""
+    global _CONFIG_CACHE
+    if _CONFIG_CACHE is not None:
+        return _CONFIG_CACHE
+
     config_file = get_config_file()
     default_config = {
         "screenshots_dir": str(Path.home() / "Pictures" / "Screenshots"),
@@ -110,13 +123,15 @@ def load_config() -> dict:
                 f'ollama_prompt = "{default_config["ollama_prompt"]}"\n'
             )
             f.write(toml_data.encode("utf-8"))
-        return default_config
+        _CONFIG_CACHE = default_config
+        return _CONFIG_CACHE
 
     with open(config_file, "rb") as f:
         config = tomllib.load(f)
 
     # Merge defaults with user config so newly-added keys stay backward compatible.
-    return {**default_config, **config}
+    _CONFIG_CACHE = {**default_config, **config}
+    return _CONFIG_CACHE
 
 
 def get_screenshots_dir() -> Path:
@@ -188,19 +203,12 @@ def ensure_dirs() -> None:
     config_dir.mkdir(parents=True, exist_ok=True)
     data_dir.mkdir(parents=True, exist_ok=True)
 
-
-# Module-level constants for easy access
-CONFIG_DIR = get_config_dir()
-DATA_DIR = get_data_dir()
-CONFIG_FILE = get_config_file()
-DB_FILE = get_db_file()
-
-# Debug
-if __name__ == "__main__":
-    print(f"Config Directory: {CONFIG_DIR}")
-    print(f"Data Directory: {DATA_DIR}")
-    print(f"Config File: {CONFIG_FILE}")
-    print(f"Database File: {DB_FILE}")
+def print_config() -> None:
+    """Print the current configuration."""
+    print(f"Config Directory: {get_config_dir()}")
+    print(f"Data Directory: {get_data_dir()}")
+    print(f"Config File: {get_config_file()}")
+    print(f"Database File: {get_db_file()}")
     print(f"Screenshots Directory: {get_screenshots_dir()}")
     print(f"Tesseract Path: {get_tesseract_path()}")
     print(f"Max Workers: {get_max_workers()}")
@@ -208,3 +216,8 @@ if __name__ == "__main__":
     print(f"OCR Engine: {get_ocr_engine()}")
     print(f"Ollama Host: {get_ollama_host()}")
     print(f"Ollama Model: {get_ollama_model()}")
+    print(f"Ollama Prompt: {get_ollama_prompt()}")
+
+# Debug
+if __name__ == "__main__":
+    print_config()

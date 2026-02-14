@@ -12,16 +12,9 @@ import threading
 
 from .db.database import OCRDatabase
 from .query import exact_search, fuzzy_search
-from .process import process
+from .index import process
 from .utils.ocr_processor import ProcessingStatus
-from .utils.config import (
-    DB_FILE,
-    get_screenshots_dir,
-    get_fuzzy_threshold,
-    ensure_dirs,
-    get_config_file,
-    get_max_workers,
-)
+from .utils.config import *
 
 
 class OCRQueryGUI:
@@ -40,7 +33,7 @@ class OCRQueryGUI:
         self.screenshots_dir = get_screenshots_dir()
 
         # Database instance
-        self.db = OCRDatabase(DB_FILE)
+        self.db = OCRDatabase(get_db_file())
 
         # Search mode (1=exact, 2=fuzzy)
         self.search_mode = tk.IntVar(value=1)
