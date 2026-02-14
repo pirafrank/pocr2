@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import Enum
 from PIL import Image
 import cv2
+import numpy as np
 import pytesseract
 
 
@@ -108,6 +109,33 @@ class OCRProcessor:
             print(f"Error resizing image {image_path}: {e}")
             return None
 
+    def preprocess_image(self, image):
+        """Comprehensive preprocessing for small text"""
+
+        # Convert PIL Image to numpy array if needed
+        if isinstance(image, Image.Image):
+            image = np.array(image)
+            # Convert RGB to BGR for OpenCV
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+        # 1. Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # 2. Apply Gaussian blur for noise reduction
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        # 3. Adaptive thresholding (crucial for varying lighting)
+        # Large block size (91 pixels) helps preserve fine details
+        binary = cv2.adaptiveThreshold(
+            blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 91, 11
+        )
+
+        # 4. Optional: Apply morphological operations to enhance text
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+
+        return cleaned
+
     def process_image(
         self,
         image_path: str,
@@ -135,12 +163,15 @@ class OCRProcessor:
 
         # Resize image for better OCR performance
         enlarged_image = self.resize_for_ocr(image_path, scale_factor)
-
         if enlarged_image is None:
             return filename, ProcessingStatus.FAILED
 
+        preprocessed = self.preprocess_image(enlarged_image)
+        if preprocessed is None:
+            return filename, ProcessingStatus.FAILED
+
         # Extract text from the enlarged image
-        ocr_text = self.extract_text(enlarged_image)
+        ocr_text = self.extract_text(preprocessed)
 
         if not ocr_text.strip():
             return filename, ProcessingStatus.FAILED

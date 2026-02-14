@@ -38,6 +38,9 @@ search:
 run:
   .\.venv\Scripts\python.exe src\\gui.py
 
+config:
+  .\.venv\Scripts\python.exe src\\utils\\config.py
+
 # Clean up virtual environment
 clean:
   Remove-Item -Recurse -Force .venv
